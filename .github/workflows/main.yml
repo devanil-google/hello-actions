@@ -1,28 +1,36 @@
-# A simple name for your workflow
-name: Simple CI Workflow
+# A workflow to connect to GCP
+name: Connect to GCP
 
 # Controls when the workflow will run
 on:
-  # Triggers the workflow on push events for the "main" branch
   push:
     branches: [ "main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow is made up of one or more jobs
+# The job to run
 jobs:
-  # This workflow contains a single job called "greet"
-  greet:
+  build-and-connect:
     # The type of virtual machine the job will run on
     runs-on: ubuntu-latest
 
-    # Steps are a sequence of tasks
+    # The steps to execute
     steps:
-      # This step checks out your repository's code so the job can access it
-      - name: Checkout repository code
+      # 1. Checkout the repository's code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # This step runs a simple shell command
-      - name: Say Hello
-        run: echo "Hello, world! The workflow is running."
+      # 2. Authenticate to Google Cloud
+      - name: Authenticate to GCP
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      # 3. Setup the gcloud CLI
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      # 4. Run a gcloud command to verify authentication
+      #    This command lists all your GCS buckets.
+      - name: List GCS Buckets
+        run: 'gcloud storage ls'
