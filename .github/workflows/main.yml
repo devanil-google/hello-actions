@@ -1,36 +1,95 @@
-# A workflow to connect to GCP
-name: Connect to GCP
+# A workflow to run an image scan, translated from a Jenkinsfile
+name: Run GCP Image Scan
 
-# Controls when the workflow will run
 on:
-  push:
-    branches: [ "main" ]
+  # This section replaces the Jenkins 'parameters' block
+  # It allows you to run the workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      IMAGE_NAME_TO_SCAN:
+        description: 'The full name of the Docker image to scan'
+        required: true
+        default: 'python:3.9-slim'
+      GCP_PROJECT_ID:
+        description: 'GCP Project ID for authentication'
+        required: true
+        default: 'liangyutan-testproject'
+      ORGANIZATION_ID:
+        description: 'Your GCP Organization ID'
+        required: true
+        default: '986981441905'
+      CONNECTOR_ID:
+        description: 'The ID for your pipeline connector'
+        required: true
+        default: 'connector-id-3'
+      SCANNER_IMAGE:
+        description: 'The Docker image that contains your scanner script'
+        required: true
+        default: 'gcr.io/liangyutan-testproject/ci-scanning-e2e:latest'
+      IMAGE_DIGEST:
+        description: 'The Docker image digest'
+        required: true
+        default: 'sha256:b0c6491f5ba0dff4c919008f5ab48db97315676136c21796e41fb6326e88d02a'
+      IMAGE_ID:
+        description: 'The Docker image id'
+        required: true
+        default: 'b0c6491f5ba0d'
+      IMAGE_TAG:
+        description: 'The Docker image version'
+        required: true
+        default: 'latest'
 
-# The job to run
 jobs:
-  build-and-connect:
-    # The type of virtual machine the job will run on
+  # This job contains the translated 'Image Analysis' stage
+  image-analysis:
     runs-on: ubuntu-latest
-
-    # The steps to execute
     steps:
-      # 1. Checkout the repository's code
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # 2. Authenticate to Google Cloud
+      # 1. Authenticate to Google Cloud (replaces 'withCredentials' and gcloud auth)
       - name: Authenticate to GCP
         id: auth
         uses: 'google-github-actions/auth@v2'
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      # 3. Setup the gcloud CLI
+      # 2. Set up the gcloud CLI
       - name: Set up Cloud SDK
         uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+          project_id: ${{ inputs.GCP_PROJECT_ID }}
 
-      # 4. Run a gcloud command to verify authentication
-      #    This command lists all your GCS buckets.
-      - name: List GCS Buckets
-        run: 'gcloud storage ls'
+      # 3. Configure Docker for GCR
+      - name: Configure Docker
+        run: gcloud auth configure-docker gcr.io --quiet
+
+      # 4. This step contains the main script logic from your Jenkinsfile
+      - name: Create, Run, and Clean Up Scanner Container
+        run: |
+          echo "📦 Creating container from SBOM scanner image: ${{ inputs.SCANNER_IMAGE }}"
+          
+          # Create the container and store its ID
+          container_id=$(docker create \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -e GCP_PROJECT_ID="${{ inputs.GCP_PROJECT_ID }}" \
+            -e ORGANIZATION_ID="${{ inputs.ORGANIZATION_ID }}" \
+            -e API_ENDPOINT="autopush-artifactscanguard.sandbox.googleapis.com" \
+            -e API_USER_PROJECT="${{ inputs.GCP_PROJECT_ID }}" \
+            -e IMAGE_NAME="${{ inputs.IMAGE_NAME_TO_SCAN }}" \
+            -e IMAGE_TAG="${{ inputs.IMAGE_TAG }}" \
+            -e IMAGE_DIGEST="${{ inputs.IMAGE_DIGEST }}" \
+            -e IMAGE_ID="${{ inputs.IMAGE_ID }}" \
+            -e CONNECTOR_ID="${{ inputs.CONNECTOR_ID }}" \
+            -e BUILD_TAG="${{ github.workflow }}" \
+            -e BUILD_ID="${{ github.run_number }}" \
+            -e GCLOUD_KEY_PATH="/tmp/scc-key.json" \
+            -e OUTPUT_PATH="/output/result.textproto" \
+            ${{ inputs.SCANNER_IMAGE }})
+
+          echo "📤 Copying service account key into container..."
+          # The auth action saves the key to a temporary file; we copy it from there
+          docker cp "${{ steps.auth.outputs.credentials_file_path }}" "$container_id:/tmp/scc-key.json"
+
+          echo "🚀 Starting container to scan: ${{ inputs.IMAGE_NAME_TO_SCAN }}"
+          docker start -a "$container_id"
+
+          echo "🧹 Cleaning up container..."
+          docker rm "$container_id"
