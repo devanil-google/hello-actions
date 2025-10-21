@@ -9,7 +9,7 @@ on:
       IMAGE_NAME_TO_SCAN:
         description: 'The full name of the Docker image to scan'
         required: true
-        default: 'python:3.9-slim'
+        default: 'alpine'
       GCP_PROJECT_ID:
         description: 'GCP Project ID for authentication'
         required: true
