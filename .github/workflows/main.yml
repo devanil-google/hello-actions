@@ -25,7 +25,7 @@ on:
       SCANNER_IMAGE:
         description: 'The Docker image that contains your scanner script'
         required: true
-        default: 'gcr.io/liangyutan-testproject/ci-scanning-e2e:latest'
+        default: 'gcr.io/ci-plugin/updated-ci-scanning-multistage-build:latest'
       IMAGE_DIGEST:
         description: 'The Docker image digest'
         required: true
