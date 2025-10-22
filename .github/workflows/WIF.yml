@@ -1,7 +1,7 @@
 # Add Workload Identity Provider in Github secret GCP_WORKLOAD_IDENTITY_PROVIDER
 # Add Service Account in Github secret GCP_SERVICE_ACCOUNT
 
-name: 'Image Analysis Workflow'
+name: '[WIF] Image Scan.'
 
 on:
   push:
@@ -75,7 +75,6 @@ jobs:
       # Step 3: Configure Docker for registries
       - name: 'Configure Docker for Artifact Registry'
         run: |
-          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
           gcloud auth configure-docker gcr.io --quiet
 
       # Step 4: Run Image Analysis Scan and Handle Exit Codes
