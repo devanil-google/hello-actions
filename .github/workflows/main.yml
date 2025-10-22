@@ -25,7 +25,7 @@ on:
       SCANNER_IMAGE:
         description: 'The Docker image that contains your scanner script'
         required: true
-        default: 'gcr.io/ci-plugin/updated-ci-scanning-multistage-build:latest'
+        default: 'us-central1-docker.pkg.dev/ci-plugin/ci-images/scc-artifactguard-scan-image:latest'
       IMAGE_DIGEST:
         description: 'The Docker image digest'
         required: true
@@ -59,7 +59,7 @@ jobs:
 
       # 3. Configure Docker for GCR
       - name: Configure Docker
-        run: gcloud auth configure-docker gcr.io --quiet
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
       # 4. This step contains the main script logic from your Jenkinsfile
       - name: Create, Run, and Clean Up Scanner Container
