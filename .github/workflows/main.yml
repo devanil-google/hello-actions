@@ -21,7 +21,7 @@ on:
       CONNECTOR_ID:
         description: 'The ID for your pipeline connector'
         required: true
-        default: 'connector-id-3'
+        default: 'organizations/714470867684/locations/global/connectors/privatepreviewdemo'
       SCANNER_IMAGE:
         description: 'The Docker image that contains your scanner script'
         required: true
