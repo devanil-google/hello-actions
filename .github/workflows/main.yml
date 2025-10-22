@@ -26,14 +26,6 @@ on:
         description: 'The Docker image that contains your scanner script'
         required: true
         default: 'us-central1-docker.pkg.dev/ci-plugin/ci-images/scc-artifactguard-scan-image:latest'
-      IMAGE_DIGEST:
-        description: 'The Docker image digest'
-        required: true
-        default: 'sha256:b0c6491f5ba0dff4c919008f5ab48db97315676136c21796e41fb6326e88d02a'
-      IMAGE_ID:
-        description: 'The Docker image id'
-        required: true
-        default: 'b0c6491f5ba0d'
       IMAGE_TAG:
         description: 'The Docker image version'
         required: true
