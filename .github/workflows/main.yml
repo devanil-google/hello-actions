@@ -13,11 +13,11 @@ on:
       GCP_PROJECT_ID:
         description: 'GCP Project ID for authentication'
         required: true
-        default: 'liangyutan-testproject'
+        default: 'cispoc'
       ORGANIZATION_ID:
         description: 'Your GCP Organization ID'
         required: true
-        default: '986981441905'
+        default: '714470867684'
       CONNECTOR_ID:
         description: 'The ID for your pipeline connector'
         required: true
@@ -71,17 +71,12 @@ jobs:
             -v /var/run/docker.sock:/var/run/docker.sock \
             -e GCP_PROJECT_ID="${{ inputs.GCP_PROJECT_ID }}" \
             -e ORGANIZATION_ID="${{ inputs.ORGANIZATION_ID }}" \
-            -e API_ENDPOINT="autopush-artifactscanguard.sandbox.googleapis.com" \
-            -e API_USER_PROJECT="${{ inputs.GCP_PROJECT_ID }}" \
             -e IMAGE_NAME="${{ inputs.IMAGE_NAME_TO_SCAN }}" \
             -e IMAGE_TAG="${{ inputs.IMAGE_TAG }}" \
-            -e IMAGE_DIGEST="${{ inputs.IMAGE_DIGEST }}" \
-            -e IMAGE_ID="${{ inputs.IMAGE_ID }}" \
             -e CONNECTOR_ID="${{ inputs.CONNECTOR_ID }}" \
             -e BUILD_TAG="${{ github.workflow }}" \
             -e BUILD_ID="${{ github.run_number }}" \
             -e GCLOUD_KEY_PATH="/tmp/scc-key.json" \
-            -e OUTPUT_PATH="/output/result.textproto" \
             ${{ inputs.SCANNER_IMAGE }})
 
           echo "📤 Copying service account key into container..."
