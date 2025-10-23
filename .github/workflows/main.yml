@@ -94,7 +94,7 @@ jobs:
             -e CONNECTOR_ID="${CONNECTOR_ID}" \
             -e BUILD_TAG="${{ github.workflow }}" \
             -e BUILD_ID="${{ github.run_number }}" \
-            -e VERBOSITY="${{VERBOSITY}}" \
+            -e VERBOSITY="${VERBOSITY}" \
             "${SCANNER_IMAGE}" \
             || exit_code=$?
 
