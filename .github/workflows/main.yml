@@ -21,7 +21,7 @@ on:
       CONNECTOR_ID:
         description: 'The ID for your pipeline connector'
         required: true
-        default: 'organizations/714470867684/locations/global/connectors/privatepreviewdemo'
+        default: 'organizations/714470867684/locations/global/connectors/aaa-keep'
       SCANNER_IMAGE:
         description: 'The Docker image that contains your scanner script'
         required: true
@@ -87,8 +87,7 @@ jobs:
             -e IMAGE_NAME="${IMAGE_NAME}" \
             -e IMAGE_TAG="${IMAGE_TAG}" \
             -e CONNECTOR_ID="${CONNECTOR_ID}" \
-            -e BUILD_TAG="${{ github.workflow }}" \
-            -e BUILD_ID="${{ github.run_number }}" \
+            -e RUN_ID="${{ github.workflow }}" \
             "${SCANNER_IMAGE}" \
             || exit_code=$?
 
