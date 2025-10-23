@@ -35,6 +35,10 @@ on:
         required: false
         type: boolean
         default: false
+      VERBOSITY:
+        description: 'Ignore server errors'
+        required: false
+        default: 'HIGH'
 
 jobs:
   # This job contains the translated 'Image Analysis' stage
@@ -89,6 +93,7 @@ jobs:
             -e CONNECTOR_ID="${CONNECTOR_ID}" \
             -e BUILD_TAG="${{ github.workflow }}" \
             -e BUILD_ID="${{ github.run_number }}" \
+            -e VERBOSITY="${{VERBOSITY}}" \
             "${SCANNER_IMAGE}" \
             || exit_code=$?
 
