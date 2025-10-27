@@ -1,5 +1,5 @@
 # A workflow to run an image scan, translated from a Jenkinsfile
-name: Run GCP Image Scan
+name: SA, Run GCP Image Scan Local.
 
 on:
   # This section replaces the Jenkins 'parameters' block
