@@ -45,8 +45,6 @@ steps:
           -e IMAGE_TAG="$_IMAGE_TAG" \
           -e IMAGE_DIGEST="$_IMAGE_DIGEST" \
           -e API_ENDPOINT="$_API_ENDPOINT" \
-          # DIRECTLY USE COMMAND SUBSTITUTION: Cloud Build sees this as a single string 
-          # argument for the 'docker run' command, and the shell executes the 'cat' command.
           -e GCP_ACCESS_TOKEN="$(cat /workspace/gcp_token.txt)" \
           "$_SCANNER_IMAGE" || exit_code=$?
           
