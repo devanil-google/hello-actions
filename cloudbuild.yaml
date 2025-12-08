@@ -94,6 +94,6 @@ substitutions:
   _BUILD_TAG: 'cloud-build-job'
   # _API_ENDPOINT: 'autopush-artifactscanguard.sandbox.googleapis.com'
 
-serviceAccount: "projects/cispoc/serviceAccounts/780629139823-compute@developer.gserviceaccount.com"
+serviceAccount: "projects/cispoc/serviceAccounts/github-runner-sa@ci-plugin.iam.gserviceaccount.com"
 options:
   logging: CLOUD_LOGGING_ONLY  # Logs only in Cloud Logging, no GCS bucket needed
