@@ -1,6 +1,6 @@
 steps:
   - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'Generate Token - Auth Testing.'
+    id: 'Generate Token - Auth.'
     entrypoint: 'bash'
     args:
       - '-c'
