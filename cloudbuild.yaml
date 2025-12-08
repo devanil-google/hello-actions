@@ -1,8 +1,11 @@
-# cloudbuild.yaml
+# This Cloud Build file performs the following actions:
+# 1. Generates a short-lived access token for the specified service account.
+# 2. Builds a Docker image from the current directory.
+# 3. Runs an external scanner image, passing all necessary variables and the
+#    GCP access token as environment variables to the running container.
 
 steps:
   # 1. Generate Access Token and save it to the shared /workspace
-  # This token is for the 'serviceAccount' specified at the bottom of the file.
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'Generate Token'
     entrypoint: 'bash'
@@ -16,7 +19,7 @@ steps:
           echo "Failed to generate token." >&2
           exit 1
         fi
-        echo "Token generated successfully and stored in /workspace/gcp_token.txt"
+        echo "Token generated successfully."
 
   # 2. Build the Docker Image from source
   - name: 'gcr.io/cloud-builders/docker'
@@ -26,12 +29,9 @@ steps:
       - '-t'
       - '${_IMAGE_NAME_TO_SCAN}:${_IMAGE_TAG}'
       - '.'
-    # Images field is optional if you are not pushing to Artifact Registry
-    # images:
-    #   - '${_IMAGE_NAME_TO_SCAN}:${_IMAGE_TAG}'
 
   # 3. Image Analysis - Run the scanner image as a container
-  # The scanner image runs the script that executes your API call.
+  # The scanner image runs the script that executes your API call using the passed environment variables.
   - id: 'Image-Analysis'
     # This is the image that contains your analysis script and curl command
     name: '$_SCANNER_IMAGE'
@@ -39,16 +39,11 @@ steps:
     args:
       - '-c'
       - |
-        # Read the token from the file created in Step 1
-        ACCESS_TOKEN=$(cat /workspace/gcp_token.txt)
-        
         echo "Starting image analysis and API submission..."
         
-        # NOTE: If your _SCANNER_IMAGE is a dedicated script, you don't need the 
-        # docker run command below. You can replace the whole 'args' block with 
-        # the direct curl call inside this step's shell if the image has 'curl'.
-
-        # --- The docker run command (for running a script inside a container) ---
+        # Pass the access token directly by reading the file content
+        ACCESS_TOKEN_VALUE=$(cat /workspace/gcp_token.txt)
+        
         exit_code=0
         docker run --rm \
           -v /var/run/docker.sock:/var/run/docker.sock \
@@ -59,12 +54,12 @@ steps:
           -e IMAGE_TAG="$_IMAGE_TAG" \
           -e IMAGE_DIGEST="$_IMAGE_DIGEST" \
           -e API_ENDPOINT="$_API_ENDPOINT" \
-          # PASSING THE ACCESS TOKEN TO THE DOCKER CONTAINER'S ENVIRONMENT
-          -e GCP_ACCESS_TOKEN="$ACCESS_TOKEN" \
+          # CORRECTLY PASSING THE ACCESS TOKEN TO THE DOCKER CONTAINER
+          -e GCP_ACCESS_TOKEN="$ACCESS_TOKEN_VALUE" \
           "$_SCANNER_IMAGE" || exit_code=$?
           
         if [ $exit_code -ne 0 ]; then
-          echo "❌ Image scan failed with exit code $exit_code." >&2
+          echo "❌ Image analysis failed with exit code $exit_code." >&2
           exit 1
         fi
         echo "✅ Image analysis completed successfully."
@@ -74,22 +69,15 @@ steps:
 # ----------------------------------------------------------------------
 
 substitutions:
-  # Built-in variables
-  # PROJECT_ID is built-in and does not need to be listed here.
-  # BUILD_ID is built-in.
-
-  # User-defined variables (Start with an underscore)
+  # User-defined variables
   _IMAGE_NAME_TO_SCAN: 'alpine'
   _ORGANIZATION_ID: '864375476167'
-  _CONNECTOR_ID: 'connector-id-3'
-  _SCANNER_IMAGE: 'gcr.io/ci-plugin/cloud-build-integration:latest' # Image that runs your curl/analysis
+  _SCANNER_IMAGE: 'gcr.io/ci-plugin/cloud-build-integration:latest'
   _IMAGE_TAG: 'latest'
   _IMAGE_DIGEST: 'sha256:b0c6491f5ba0dff4c919008f5ab48db97315676136c21796e41fb6326e88d02a'
-  _API_ENDPOINT: 'us-west1-gkehub.googleapis.com' # Example endpoint
+  _API_ENDPOINT: 'us-west1-gkehub.googleapis.com' # Replace with your actual endpoint
 
-# This service account is used for all steps. It MUST have the 'iam.serviceAccountTokenCreator' 
-# permission on itself to run 'gcloud auth print-access-token' and permissions 
-# to call the 'artifactEvaluations:dataGateway' API.
+# The service account must have permissions to generate its own token and call the target API.
 serviceAccount: "projects/ci-plugin/serviceAccounts/696023462194-compute@developer.gserviceaccount.com"
 
 options:
