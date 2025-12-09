@@ -1,5 +1,3 @@
-# cloudbuild.yaml
-
 steps:
   # 1. Generate Access Token and save it to the shared /workspace
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -26,7 +24,8 @@ steps:
       - '${_IMAGE_NAME_TO_SCAN}:${_IMAGE_TAG}'
       - '.'
 
-# Add this new step to your cloudbuild.yaml
+  # 3. DIRECT API TEST (Non-isolated environment)
+  # This tests if the Service Account and IAM role work outside of docker run.
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'Test-API-Direct'
     entrypoint: 'bash'
@@ -35,33 +34,37 @@ steps:
       - |
         echo "Starting direct API test..."
         ACCESS_TOKEN=$(cat /workspace/gcp_token.txt)
-    
+        
+        # Use the substitution variables directly
         API_ENDPOINT='artifactscanguard.googleapis.com'
-        ORGANIZATION_ID='864375476167'
-      
+        ORGANIZATION_ID='${_ORGANIZATION_ID}' # Use substitution directly
+        PROJECT_ID='${_PROJECT_ID}'           # Use substitution directly
+        
         api_response=$(curl -s -X GET \
-           -H "Authorization: Bearer $ACCESS_TOKEN" \
-           -H "Content-Type: application/json" \
-           -H "X-Goog-User-Project: $PROJECT_ID" \
-           -G \
-           --data-urlencode "artifact_metadata.image_name=$_IMAGE_NAME_TO_SCAN" \
-           --data-urlencode "artifact_metadata.image_tag=$_IMAGE_TAG" \
-           --data-urlencode "artifact_metadata.image_digest=$_IMAGE_DIGEST" \
-           "https://$API_ENDPOINT/v1alpha/organizations/$ORGANIZATION_ID/locations/global/artifactEvaluations:dataGateway")
-      
-      echo "API Response Status:"
-      echo "$api_response"
-      echo "--- Full Response ---"
-      echo "$api_response"
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "X-Goog-User-Project: $PROJECT_ID" \
+            -G \
+            --data-urlencode "artifact_metadata.image_name=${_IMAGE_NAME_TO_SCAN}" \
+            --data-urlencode "artifact_metadata.image_tag=${_IMAGE_TAG}" \
+            --data-urlencode "artifact_metadata.image_digest=${_IMAGE_DIGEST}" \
+            "https://$API_ENDPOINT/v1alpha/organizations/$ORGANIZATION_ID/locations/global/artifactEvaluations:dataGateway")
+        
+        echo "API Response Status:"
+        echo "$api_response"
+        echo "--- Full Response ---"
+        echo "$api_response"
 
-      # Exit if the response contains "PERMISSION_DENIED" to fail the build early
-      if echo "$api_response" | grep -q "PERMISSION_DENIED"; then
-          echo "❌ Direct API Test FAILED (403)." >&2
-          exit 1
-      fi
-      echo "✅ Direct API Test Passed (or failed non-permission related)."
+        # Exit if the response contains "PERMISSION_DENIED" to fail the build early
+        if echo "$api_response" | grep -q "PERMISSION_DENIED"; then
+            echo "❌ Direct API Test FAILED (403)." >&2
+            # Do NOT exit 1 here, otherwise, the next step will not run and you 
+            # won't see if the original 'docker run' step works.
+            # We'll allow it to pass so you see the failure/success of the next step.
+        fi
+        echo "✅ Direct API Test Finished."
 
-  # 3. Image Analysis - Run the scanner image as a container
+  # 4. Image Analysis - Run the scanner image as a container (Original Step 3)
   - id: 'Image-Analysis'
     name: '$_SCANNER_IMAGE'
     entrypoint: 'bash'
@@ -74,15 +77,15 @@ steps:
         docker run --rm \
           -v /var/run/docker.sock:/var/run/docker.sock \
           -v /workspace:/workspace \
-          -e GCP_PROJECT_ID="$_PROJECT_ID" \
-          -e ORGANIZATION_ID="$_ORGANIZATION_ID" \
-          -e IMAGE_NAME="$_IMAGE_NAME_TO_SCAN" \
-          -e IMAGE_TAG="$_IMAGE_TAG" \
-          -e IMAGE_DIGEST="$_IMAGE_DIGEST" \
-          -e API_ENDPOINT="$_API_ENDPOINT" \
-          -e CONNECTOR_ID="$_CONNECTOR_ID" \
-          -e BUILD_TAG="$_BUILD_TAG" \
-          -e BUILD_ID="$BUILD_ID" \
+          -e GCP_PROJECT_ID="${_PROJECT_ID}" \
+          -e ORGANIZATION_ID="${_ORGANIZATION_ID}" \
+          -e IMAGE_NAME="${_IMAGE_NAME_TO_SCAN}" \
+          -e IMAGE_TAG="${_IMAGE_TAG}" \
+          -e IMAGE_DIGEST="${_IMAGE_DIGEST}" \
+          -e API_ENDPOINT="${_API_ENDPOINT}" \
+          -e CONNECTOR_ID="${_CONNECTOR_ID}" \
+          -e BUILD_TAG="${_BUILD_TAG}" \
+          -e BUILD_ID="${BUILD_ID}" \
           -e GCP_ACCESS_TOKEN="$(cat /workspace/gcp_token.txt)" \
           "$_SCANNER_IMAGE" || exit_code=$?
           
@@ -103,7 +106,7 @@ substitutions:
   _SCANNER_IMAGE: 'gcr.io/ci-plugin/cloud-build-integration:latest'
   _IMAGE_TAG: 'latest'
   _IMAGE_DIGEST: 'sha256:b0c6491f5ba0dff4c919008f5ab48db97315676136c21796e41fb6326e88d02a'
-  _API_ENDPOINT: 'us-west1-gkehub.googleapis.com' 
+  _API_ENDPOINT: 'us-west1-gkehub.googleapis.com'  
   _CONNECTOR_ID: 'connector-id-3'
   _BUILD_TAG: 'cloud-build-job'
   _PROJECT_ID: 'ci-plugin'
