@@ -26,6 +26,41 @@ steps:
       - '${_IMAGE_NAME_TO_SCAN}:${_IMAGE_TAG}'
       - '.'
 
+# Add this new step to your cloudbuild.yaml
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'Test-API-Direct'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Starting direct API test..."
+        ACCESS_TOKEN=$(cat /workspace/gcp_token.txt)
+    
+        API_ENDPOINT='artifactscanguard.googleapis.com'
+        ORGANIZATION_ID='864375476167'
+      
+        api_response=$(curl -s -X GET \
+           -H "Authorization: Bearer $ACCESS_TOKEN" \
+           -H "Content-Type: application/json" \
+           -H "X-Goog-User-Project: $PROJECT_ID" \
+           -G \
+           --data-urlencode "artifact_metadata.image_name=$_IMAGE_NAME_TO_SCAN" \
+           --data-urlencode "artifact_metadata.image_tag=$_IMAGE_TAG" \
+           --data-urlencode "artifact_metadata.image_digest=$_IMAGE_DIGEST" \
+           "https://$API_ENDPOINT/v1alpha/organizations/$ORGANIZATION_ID/locations/global/artifactEvaluations:dataGateway")
+      
+      echo "API Response Status:"
+      echo "$api_response" | grep '"code":' 
+      echo "--- Full Response ---"
+      echo "$api_response"
+
+      # Exit if the response contains "PERMISSION_DENIED" to fail the build early
+      if echo "$api_response" | grep -q "PERMISSION_DENIED"; then
+          echo "❌ Direct API Test FAILED (403)." >&2
+          exit 1
+      fi
+      echo "✅ Direct API Test Passed (or failed non-permission related)."
+
   # 3. Image Analysis - Run the scanner image as a container
   - id: 'Image-Analysis'
     name: '$_SCANNER_IMAGE'
