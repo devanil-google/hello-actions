@@ -25,7 +25,7 @@ steps:
       - '.'
 
   # 3. DIRECT API TEST (Non-isolated environment)
-  # This tests if the Service Account and IAM role work outside of docker run.
+  # This tests if the Service Account and IAM role work outside of the 'docker run' isolation.
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'Test-API-Direct'
     entrypoint: 'bash'
@@ -33,34 +33,33 @@ steps:
       - '-c'
       - |
         echo "Starting direct API test..."
-        ACCESS_TOKEN=$(cat /workspace/gcp_token.txt)
+        # Use $$ for shell variables defined within this block
+        ACCESS_TOKEN=$$(cat /workspace/gcp_token.txt) 
         
-        # Use the substitution variables directly
+        # Use single $ for Cloud Build substitution variables
         API_ENDPOINT='artifactscanguard.googleapis.com'
-        ORGANIZATION_ID='${_ORGANIZATION_ID}' # Use substitution directly
-        PROJECT_ID='${_PROJECT_ID}'           # Use substitution directly
+        ORGANIZATION_ID='${_ORGANIZATION_ID}'
+        PROJECT_ID='${_PROJECT_ID}'
         
-        api_response=$(curl -s -X GET \
-            -H "Authorization: Bearer $ACCESS_TOKEN" \
+        # Use $$ for shell variables inside curl
+        api_response=$$(curl -s -X GET \
+            -H "Authorization: Bearer $$ACCESS_TOKEN" \
             -H "Content-Type: application/json" \
-            -H "X-Goog-User-Project: $PROJECT_ID" \
+            -H "X-Goog-User-Project: $$PROJECT_ID" \
             -G \
             --data-urlencode "artifact_metadata.image_name=${_IMAGE_NAME_TO_SCAN}" \
             --data-urlencode "artifact_metadata.image_tag=${_IMAGE_TAG}" \
             --data-urlencode "artifact_metadata.image_digest=${_IMAGE_DIGEST}" \
-            "https://$API_ENDPOINT/v1alpha/organizations/$ORGANIZATION_ID/locations/global/artifactEvaluations:dataGateway")
+            "https://$$API_ENDPOINT/v1alpha/organizations/$$ORGANIZATION_ID/locations/global/artifactEvaluations:dataGateway")
         
         echo "API Response Status:"
-        echo "$api_response"
+        echo "$$api_response"
         echo "--- Full Response ---"
-        echo "$api_response"
+        echo "$$api_response"
 
-        # Exit if the response contains "PERMISSION_DENIED" to fail the build early
-        if echo "$api_response" | grep -q "PERMISSION_DENIED"; then
+        # Check for failure
+        if echo "$$api_response" | grep -q "PERMISSION_DENIED"; then
             echo "❌ Direct API Test FAILED (403)." >&2
-            # Do NOT exit 1 here, otherwise, the next step will not run and you 
-            # won't see if the original 'docker run' step works.
-            # We'll allow it to pass so you see the failure/success of the next step.
         fi
         echo "✅ Direct API Test Finished."
 
@@ -73,6 +72,7 @@ steps:
       - |
         echo "Starting image analysis and API submission..."
         
+        # Use $$ for shell variables inside this block
         exit_code=0
         docker run --rm \
           -v /var/run/docker.sock:/var/run/docker.sock \
@@ -86,11 +86,11 @@ steps:
           -e CONNECTOR_ID="${_CONNECTOR_ID}" \
           -e BUILD_TAG="${_BUILD_TAG}" \
           -e BUILD_ID="${BUILD_ID}" \
-          -e GCP_ACCESS_TOKEN="$(cat /workspace/gcp_token.txt)" \
-          "$_SCANNER_IMAGE" || exit_code=$?
+          -e GCP_ACCESS_TOKEN="$$(cat /workspace/gcp_token.txt)" \
+          "$_SCANNER_IMAGE" || exit_code=$$?
           
-        if [ $exit_code -ne 0 ]; then
-          echo "❌ Image analysis failed with exit code $exit_code." >&2
+        if [ $$exit_code -ne 0 ]; then
+          echo "❌ Image analysis failed with exit code $$exit_code." >&2
           exit 1
         fi
         echo "✅ Image analysis completed successfully."
@@ -109,7 +109,7 @@ substitutions:
   _API_ENDPOINT: 'us-west1-gkehub.googleapis.com'  
   _CONNECTOR_ID: 'connector-id-3'
   _BUILD_TAG: 'cloud-build-job'
-  _PROJECT_ID: 'ci-plugin'
+  _PROJECT_ID: 'ci-plugin' # Added for clarity
 
 serviceAccount: "projects/ci-plugin/serviceAccounts/696023462194-compute@developer.gserviceaccount.com"
 
