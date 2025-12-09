@@ -50,7 +50,7 @@ steps:
            "https://$API_ENDPOINT/v1alpha/organizations/$ORGANIZATION_ID/locations/global/artifactEvaluations:dataGateway")
       
       echo "API Response Status:"
-      echo "$api_response" | grep '"code":' 
+      echo "$api_response"
       echo "--- Full Response ---"
       echo "$api_response"
 
