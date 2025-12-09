@@ -46,6 +46,8 @@ steps:
           -e IMAGE_DIGEST="$_IMAGE_DIGEST" \
           -e API_ENDPOINT="$_API_ENDPOINT" \
           -e CONNECTOR_ID="$_CONNECTOR_ID" \
+          -e BUILD_TAG="$_BUILD_TAG" \
+          -e BUILD_ID="$BUILD_ID" \
           -e GCP_ACCESS_TOKEN="$(cat /workspace/gcp_token.txt)" \
           "$_SCANNER_IMAGE" || exit_code=$?
           
@@ -68,6 +70,7 @@ substitutions:
   _IMAGE_DIGEST: 'sha256:b0c6491f5ba0dff4c919008f5ab48db97315676136c21796e41fb6326e88d02a'
   _API_ENDPOINT: 'us-west1-gkehub.googleapis.com' 
   _CONNECTOR_ID: 'connector-id-3'
+  _BUILD_TAG: 'cloud-build-job'
 
 serviceAccount: "projects/ci-plugin/serviceAccounts/696023462194-compute@developer.gserviceaccount.com"
 
