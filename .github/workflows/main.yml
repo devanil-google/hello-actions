@@ -14,10 +14,10 @@ on:
         description: 'GCP Project ID for authentication'
         required: true
         default: 'cispoc'
-      ORGANIZATION_ID:
-        description: 'Your GCP Organization ID'
-        required: true
-        default: '714470867684'
+      # ORGANIZATION_ID:
+      #   description: 'Your GCP Organization ID'
+      #   required: true
+      #   default: '714470867684'
       CONNECTOR_ID:
         description: 'The ID for your pipeline connector'
         required: true
