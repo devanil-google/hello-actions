@@ -1,5 +1,6 @@
 # Add Workload Identity Provider in Github secret GCP_WORKLOAD_IDENTITY_PROVIDER
 # Add Service Account in Github secret GCP_SERVICE_ACCOUNT
+#
 
 name: '[WIF] Image Scan.'
 
