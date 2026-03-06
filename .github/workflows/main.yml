@@ -14,10 +14,10 @@ on:
         description: 'GCP Project ID for authentication'
         required: true
         default: 'cispoc'
-      # ORGANIZATION_ID:
-      #   description: 'Your GCP Organization ID'
-      #   required: true
-      #   default: '714470867684'
+      ORGANIZATION_ID:
+        description: 'Your GCP Organization ID'
+        required: true
+        default: '714470867684'
       CONNECTOR_ID:
         description: 'The ID for your pipeline connector'
         required: true
@@ -88,7 +88,6 @@ jobs:
             -v ${{ steps.auth.outputs.credentials_file_path }}:/tmp/scc-key.json \
             -e GCLOUD_KEY_PATH=/tmp/scc-key.json \
             -e GCP_PROJECT_ID="${GCP_PROJECT_ID}" \
-            -e ORGANIZATION_ID="${ORGANIZATION_ID}" \
             -e IMAGE_NAME="${IMAGE_NAME}" \
             -e IMAGE_TAG="${IMAGE_TAG}" \
             -e CONNECTOR_ID="${CONNECTOR_ID}" \
