@@ -94,6 +94,7 @@ jobs:
             -e BUILD_TAG="${{ github.workflow }}" \
             -e BUILD_ID="${{ github.run_number }}" \
             -e VERBOSITY="${VERBOSITY}" \
+            -e ORGANIZATION_ID="${ORGANIZATION_ID}" \
             "${SCANNER_IMAGE}" \
             || exit_code=$?
 
